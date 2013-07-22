@@ -1,11 +1,14 @@
 {
-  "name": "twilio-forward-sms-example",
-  "version": "0.0.0",
-  "main": "index.js",
+  "name": "bizilio",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js"
   },
-  "repository": "",
-  "author": "",
-  "license": "BSD"
+  "dependencies": {
+    "express": "3.3.4",
+    "jade": "*",
+    "forEachAsync": "~2.2.0",
+    "nodemailer": "~0.5.0"
+  }
 }
