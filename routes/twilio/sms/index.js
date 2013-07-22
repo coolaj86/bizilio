@@ -64,12 +64,11 @@
     res.end('<Response></Response>');
 
     // Forward via SMS immediately
-    console.log('SMS Body\n', req.body);
     forwardSmsViaSms(req.body.From, req.body.Body);
 
     // Forward via e-mail once all parts come in
     function send() {
-      forwardSmsViaEmail(from, msg, req.body);
+      forwardSmsViaEmail(from, msg, JSON.stringify(req.body, null, '  '));
       delete mpms[from];
     }
 

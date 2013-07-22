@@ -121,26 +121,32 @@
     var response = '<?xml version="1.0" encoding="UTF-8"?>\n'
       ;
 
-    if (req.query.tried) {
+    if (req.query.tried && 'completed' !== req.body.DialCallStatus) {
+      console.log('redirect to voicemail');
       // redirect to voicemail
       response += ""
         + "<Response>"
         + '<Redirect method="POST">' + "/twilio/voicemail" + "</Redirect>"
         + "</Response>"
         ;
-    } else if ('completed' !== req.body.DialCallStatus) {
+    } else if (!req.body || 'completed' !== req.body.DialCallStatus) {
+      console.log('call is not complete');
       // Tell the Rep to press any key to accept
+      // 7200 == 2 hours
       response += ""
         + '<Response>'
-        + '<Dial record="true" action="/twilio/voice?tried=true">'
+        + '<Dial timeLimit="7200" callerId="' + config.number + '" record="true" action="/twilio/voice?tried=true">'
         + '<Number url="/twilio/voice/screen">'
         + config.forwardTo
         + '</Number>'
+        + '</Dial>'
         + '</Response>'
         ;
+      console.log('DEBUG response:', response);
     } else {
+      console.log('completed');
       // Send recorded conversanion
-      forwardRecordedCallViaEmail(req.body.Caller, req.body.RecordingUrl, req.body);
+      forwardRecordedCallViaEmail(req.body.Caller, req.body.RecordingUrl, JSON.stringify(req.body, null, '  '));
       response += ""
         + '<Response><Hangup/></Response>'
         ;

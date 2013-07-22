@@ -68,15 +68,18 @@
     res.end();
   };
 
-  voicemail.forward = function (req, res, next) {
-    if (!/^POST$/i.test(req.method)) {
-      next();
-    }
+  voicemail.forward = function (req, res) {
+    var resp = new Twilio.TwimlResponse()
+      ;
 
     // Both of these methods are simply best-effort (and no callback).
     // TODO Could store them in a database and retry or something, but keeping it simple for now
     // RecordingUrl: 'http://api.twilio.com/2010-04-01/Accounts/AC08e198a865cfa0bada6c2b7d5b41b02a/Recordings/REbd0c0c8a0c552687959102baac212933'
     forwardVoicemailViaSms(req.body.Caller, req.body.RecordingUrl);
-    forwardVoicemailViaEmail(req.body.Caller, req.body.RecordingUrl, req.body);
+    forwardVoicemailViaEmail(req.body.Caller, req.body.RecordingUrl, JSON.stringify(req.body, null, '  '));
+
+    res.setHeader('Content-Type', 'application/xml');
+    res.write(resp.toString());
+    res.end();
   };
 }());
