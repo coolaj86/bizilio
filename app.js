@@ -5,7 +5,6 @@
  */
 
 var express = require('express')
-  , routes = require('./routes')
   , twilio = require('./routes/twilio')
   , http = require('http')
   , path = require('path')
@@ -23,7 +22,6 @@ app.use(express.logger('dev'));
 // only urlencoded forms need csrf, I think
 // ditch bodyParser in favor of json only parser
 //app.use(express.json());
-app.use(express.urlencoded());
 app.use(express.methodOverride());
 app.use(app.router);
 app.use(express.static(path.join(__dirname, 'public')));
@@ -34,6 +32,7 @@ if ('development' === app.get('env')) {
 }
 
 //mailer.init();
+app.use('/twilio', express.urlencoded());
 twilio.init({ mail: mailer.mail });
 
 // Incoming SMS
