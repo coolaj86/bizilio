@@ -44,7 +44,7 @@
 
   // Carriers will chunk out SMS from the phone,
   // but when sending it manually, we must chunk it out ourselves
-  function forwardTranscriptViaSms(caller, mp3, text) {
+  function forwardTranscriptViaSms(caller, text) {
     var obj
       , body = ("Transcript for " + caller + " " + (text ? (" " + text) : "")).split('')
       , bodies = []
@@ -73,7 +73,7 @@
     // TODO try to split on a word boundary
     while (body.length) {
       // "(xx/yy)".length //6
-      bodies.push(body.splice(0, 152));
+      bodies.push(body.splice(0, 152).join(''));
     }
 
     forEachAsync(bodies, function (next, body, i) {
