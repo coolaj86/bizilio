@@ -6,12 +6,13 @@
     , realsendemail
     ;
 
-  function sendEmail(opts) {
+  function sendEmail(opts, cb) {
     realsendemail(
       config.forwardTo  // to
     , opts.replyTo      // replyTo
     , opts.subject      // subject
     , opts.text         // text
+    , cb
     );
   }
 
