@@ -39,8 +39,14 @@ if ('development' === app.get('env')) {
  * NOTE: all twilio POSTs are urlencoded... I wonder if JSON is possible...
  */
 
-//mailer.init();
-twilio.init({ mail: mailer.mail /*TODO , mount: '/twilio'*/ });
+mailer.init({
+  config: require('./config.mailer.json')
+});
+twilio.init({
+  config: require('./config.twilio.json')
+, mail: mailer.mail
+/*TODO , mount: '/twilio'*/
+});
 
 // Incoming SMS
 app.post('/twilio/sms/forward', twilio.sms.forward);
