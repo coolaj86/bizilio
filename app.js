@@ -32,8 +32,15 @@ if ('development' === app.get('env')) {
   app.use(express.errorHandler());
 }
 
+
+
+/*
+ * NOTE: the URLs are hard-coded because the api has many cross references
+ * NOTE: all twilio POSTs are urlencoded... I wonder if JSON is possible...
+ */
+
 //mailer.init();
-twilio.init({ mail: mailer.mail });
+twilio.init({ mail: mailer.mail /*TODO , mount: '/twilio'*/ });
 
 // Incoming SMS
 app.post('/twilio/sms/forward', twilio.sms.forward);
@@ -46,6 +53,8 @@ app.post('/twilio/voice/connect', twilio.voice.connect);
 // Voicemail
 app.post('/twilio/voicemail', twilio.voicemail.create);
 app.post('/twilio/voicemail/forward', twilio.voicemail.forward);
+
+
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
