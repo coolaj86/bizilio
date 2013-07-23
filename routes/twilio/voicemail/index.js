@@ -3,21 +3,38 @@
 
   var voicemail = module.exports
     , Twilio = require('twilio')
+    , forEachAsync = require('forEachAsync')
     , config
     , twilio
     , realsendemail
     ;
 
-  function forwardVoicemailViaEmail(caller, mp3, text, body) {
+  function forwardTranscriptViaEmail(caller, text, body) {
     var subject
       , msg
       ;
 
+    // same subject for both emails
+    subject = "Voicemail from " + caller ;
+    msg = ""
+      + (text || 'failed to transcribe') + "\n\n"
+      + "\nFrom " + caller + "\n\n"
+      + "\n\n\n\n"
+      + body
+      ;
+
+    realsendemail(config.forwardEmailTo, subject, msg);
+  }
+  function forwardVoicemailViaEmail(caller, mp3, body) {
+    var subject
+      , msg
+      ;
+
+    // same subject for both emails
     subject = "Voicemail from " + caller ;
     msg = ""
       + "\n" + caller + "\n\n"
       + mp3 + "\n\n"
-      + (text ? (text + "\n\n") : '')
       + "\n\n\n\n"
       + body
       ;
@@ -25,16 +42,61 @@
     realsendemail(config.forwardEmailTo, subject, msg);
   }
 
-  function forwardVoicemailViaSms(caller, mp3, text) {
+  // Carriers will chunk out SMS from the phone,
+  // but when sending it manually, we must chunk it out ourselves
+  function forwardTranscriptViaSms(caller, mp3, text) {
     var obj
+      , body = ("Transcript for " + caller + " " + (text ? (" " + text) : "")).split('')
+      , bodies = []
+      ;
+
+    function sendSms(obj, next) {
+      twilio.sendSms(
+        obj
+      , function(error, message) {
+          if (!error) {
+            console.log('Success! The SID for this SMS message is:');
+            console.log(message.sid);
+     
+            console.log('Message sent on:');
+            console.log(message.dateCreated);
+            next();
+          }
+          else {
+            console.log('Oops! There was an error.');
+            console.error(error);
+          }
+        }
+      );
+    }
+
+    // TODO try to split on a word boundary
+    while (body.length) {
+      // "(xx/yy)".length //6
+      bodies.push(body.splice(0, 152));
+    }
+
+    forEachAsync(bodies, function (next, body, i) {
+      obj = {
+        to: config.forwardTo
+      , from: config.number
+      , body: "(" + (i + 1) + "/" + bodies.length + ")" + body
+      };
+      sendSms(obj, next);
+    });
+  }
+
+  function forwardVoicemailViaSms(caller, mp3) {
+    var obj
+        //                       15 +   12   +  1  + 122 = 150
+      , body = "Voicemail from " + caller + " " + mp3
       ;
 
     obj = {
-      to: config.forwardTo
-    , from: config.number
-            //             15 +   12   +  1  + 122 = 150
-    , body: "Voicemail from " + caller + " " + mp3 + (text ? (" " + text) : "")
-    };
+        to: config.forwardTo
+      , from: config.number
+      , body: body
+      };
 
     twilio.sendSms(
       obj
@@ -48,6 +110,7 @@
         }
         else {
           console.log('Oops! There was an error.');
+          console.error(error);
         }
       }
     );
@@ -94,27 +157,31 @@
 
     // Don't do anything until the transcription is complete
     if (req.query.wait) { 
-      res.setHeader('Content-Type', 'application/xml');
-      res.write(resp.toString());
-      res.end();
-      return;
+      // Recording only
+      forwardVoicemailViaSms(
+        req.body.Caller
+      , req.body.RecordingUrl
+      );
+      forwardVoicemailViaEmail(
+        req.body.Caller
+      , req.body.RecordingUrl
+      , JSON.stringify(req.body, null, '  ')
+      );
+    } else {
+      // Transcript only
+      forwardTranscriptViaSms(
+        req.body.Caller
+      , req.body.TranscriptionText
+      );
+      forwardTranscriptViaEmail(
+        req.body.Caller
+      , req.body.TranscriptionText
+      , JSON.stringify(req.body, null, '  ')
+      );
     }
 
     res.setHeader('Content-Type', 'application/xml');
     res.write(resp.toString());
     res.end();
-
-    // Recording + Transcript
-    forwardVoicemailViaSms(
-      req.body.Caller
-    , req.body.RecordingUrl
-    , req.body.TranscriptionText
-    );
-    forwardVoicemailViaEmail(
-      req.body.Caller
-    , req.body.RecordingUrl
-    , req.body.TranscriptionText
-    , JSON.stringify(req.body, null, '  ')
-    );
   };
 }());
