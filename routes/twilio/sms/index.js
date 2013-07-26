@@ -9,6 +9,7 @@
     , realsendemail
     , forEachAsync = require('forEachAsync')
     , splitOnWordBoundary = require('./utils').splitOnWordBoundary
+    , maxSingleMsgSize = 160
     , maxMsgSize = 160 - "(xx/yy)".length
     , maxMsgWait = 10 * 1000
     ;
@@ -46,7 +47,23 @@
       );
     }
 
-    bodies = splitOnWordBoundary(body, maxMsgSize);
+    if (body.length > maxSingleMsgSize) {
+      bodies = splitOnWordBoundary(body, maxMsgSize);
+    } else {
+      bodies = [body];
+    }
+
+    if (1 === bodies.length) {
+      obj = {
+        to: config.forwardTo
+      , from: config.number
+      , body: bodies[0]
+      };
+      sendSms(obj, function () {});
+      //sendSms(obj, cb);
+
+      return;
+    }
 
     forEachAsync(bodies, function (next, body, i) {
       obj = {
@@ -55,7 +72,7 @@
       , body: "(" + (i + 1) + "/" + bodies.length + ")" + body
       };
       sendSms(obj, next);
-    });
+    });//.then(cb);
   }
 
   function forwardSmsViaEmail(texter, sms, raw) {
