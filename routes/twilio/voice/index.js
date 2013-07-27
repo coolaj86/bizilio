@@ -159,7 +159,7 @@
       console.log('completed');
       // Send recorded conversanion
       if (req.query) {
-        caller = req.query.caller || req.body.Caller;
+        caller = req.query.customerNumber || req.body.Caller;
       }
       forwardRecordedCallViaEmail(caller, req.body.RecordingUrl, JSON.stringify(req.body, null, '  '));
       response += ""
@@ -174,11 +174,14 @@
 
   // POST /twilio/voice/dialout
   // WARNING this resource should require authorization
+  // First use case: the rep is the initiator and caller
+  // Second use case: the customer is the initiator, but requesting a call from a rep
   voice.dialout = function (req, res) {
-    console.log('dialout');
-    var caller = req.body.caller
+    console.log('dialout (call rep, then call customer)');
+    var caller = config.forwardTo // the rep will call the customer // req.body.caller
       , callee = req.body.callee
       , twilio = new Twilio.RestClient(config.id, config.auth)
+      , search = '?callee=' + encodeURIComponent(callee)
       ;
 
     //host = req.headers.host;
@@ -187,16 +190,31 @@
       , from: config.number
       // this is already recorded on the outbound side
       //, record: true
-      , url: 'http://' + config.host + '/twilio/voice/screen?dial=' + encodeURIComponent(callee)
+      , url: 'http://' + config.host + '/twilio/voice/screen' + search
       }
     , function (err, result) {
-        // Something fishy about this result...
-        // methinks it's not a plain js obj,
-        // but a mutant that doesn't .toJSON() easily
+        // TODO link call ids and respond back to the browser when the rep has answered or has declined
         console.log('dialout', result.status, result.message, result.code);
         res.send({ "success": true });
       }
     );
+  };
+
+  /*
+  // From Customer to Rep
+  voice.dialin = function (req, res) {
+    // first send email/text to rep, then call
+    // IfMachine hangup
+    console.log('dialin (calls the customer first and then the rep)');
+  };
+  */
+
+  voice.miss = function (req, res) {
+    // for dialout, this doesn't need to do anything
+    // send email to rep
+    // send text to customer
+    res.send('<Response></Response>');
+    //redirect = '<Redirect>/twilio/voice/missed?customerNumber=' + req.query.callee + '</Redirect>';
   };
 
   // POST /twilio/voice/screen
@@ -205,10 +223,22 @@
   voice.screen = function (req, res) {
     var response = '<?xml version="1.0" encoding="UTF-8"?>\n'
       , search = ''
+      , redirect = ''
       ;
 
-    if (req.query.dial) {
-      search = '?dial=' + encodeURIComponent(req.query.dial);
+    // TODO when is the customerNumber req.body.Caller?
+    // and aren't both included anyway?
+    // probably just needs something more like customer=caller
+    if (req.query.callee) {
+      search = '?callee=' + encodeURIComponent(req.query.callee);
+      if ('customer' === req.query.initiator) {
+        redirect = '<Redirect>/twilio/voice/miss?customerNumber=' + req.query.callee + '</Redirect>';
+      }
+    } else if (req.query.caller) {
+      search = '?caller=' + encodeURIComponent(req.query.caller);
+      if ('customer' === req.query.initiator) {
+        redirect = '<Redirect>/twilio/voice/miss?customerNumber=' + req.query.caller + '</Redirect>';
+      }
     }
 
     // Tell the Rep to press any key to accept
@@ -234,12 +264,17 @@
       , dial = ''
       ;
 
-    if (req.query.dial) {
-      dial = '<Dial record="true" callerId="'
-        + config.number 
-        + '" action="/twilio/voice?caller=' + encodeURIComponent(req.query.dial)
+    if (req.query.callee) {
+      dial = '<Dial record="true" callerId="' + config.number + '"'
+        + ' action="/twilio/voice?customerNumber=' + encodeURIComponent(req.query.callee)
         + '">'
-        + req.query.dial + '</Dial>'
+        + req.query.callee + '</Dial>'
+        ;
+    } else if (req.query.caller) {
+      dial = '<Dial record="true" callerId="' + config.number + '"'
+        + ' action="/twilio/voice' // ?customerNumber=' req.body.Caller??
+        + '">'
+        + req.query.callee + '</Dial>'
         ;
     }
     // Tell the rep that they're being connected
