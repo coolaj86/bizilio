@@ -8,6 +8,7 @@
     , Twilio = require('twilio')
     , twilio
     , realsendemail
+    , host = 'chunkhost.coolaj86.com:3000'
     /*
     , nums = [
         "801-360-4427" // me
@@ -157,19 +158,53 @@
     res.end();
   };
 
+  // POST /twilio/voice/dialout
+  // WARNING this resource should require authorization
+  voice.dialout = function (req, res) {
+    console.log('dialout');
+    var caller = req.body.caller
+      , callee = req.body.callee
+      , twilio = new Twilio.RestClient(config.id, config.auth)
+      ;
+
+    // host = req.headers['host']
+    twilio.calls.post(
+      { to: caller
+      , from: config.number
+      // this is already recorded on the outbound side
+      //, record: true
+      , url: 'http://' + host + '/twilio/voice/screen?dial=' + encodeURIComponent(callee)
+      }
+    , function (err, result) {
+        // Something fishy about this result...
+        // methinks it's not a plain js obj,
+        // but a mutant that doesn't .toJSON() easily
+        console.log('dialout', result);
+        res.send({ "success": true });
+      }
+    );
+  };
+
   // POST /twilio/voice/screen
   // Ensure that this is a person and not voicemail
   // https://www.twilio.com/docs/howto/callscreening
   voice.screen = function (req, res) {
     var response = '<?xml version="1.0" encoding="UTF-8"?>\n'
+      , search = ''
       ;
+
+    if (req.query.dial) {
+      search = '?dial=' + encodeURIComponent(req.params.dial);
+    }
 
     // Tell the Rep to press any key to accept
     // The node api can't do this
     response += ""
-      + '<Response><Gather action="/twilio/voice/connect" finishOnKey="any digit" numDigits="1">'
+      + '<Response><Gather action="/twilio/voice/connect' + search + '" finishOnKey="any digit" numDigits="1">'
       + '<Say>Press any key to accept this call</Say>'
       + '</Gather>'
+      // TODO instead of hanging up, redirect to voicemail?
+      // otherwise it's left to the fallback url to pickup the voicemail
       + '<Hangup/>'
       + '</Response>'
       ;
@@ -182,13 +217,18 @@
   // POST /twilio/voice/connect
   voice.connect = function (req, res) {
     var response
+      , dial = ''
       ;
 
-    // The the rep that they're being connected
+    if (req.params.dial) {
+      dial = '<Dial record="true" callerId="' + config.number + '" action="/twilio/voice">' + req.params.dial + '</Dial>';
+    }
+    // Tell the rep that they're being connected
     response = ""
       + '<?xml version="1.0" encoding="UTF-8"?>\n'
       + '<Response>'
       + '<Say>Connecting</Say>'
+      + dial
       + '</Response>'
       ;
 

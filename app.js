@@ -60,6 +60,8 @@ app.post('/twilio/sms/forward', twilio.sms.forward);
 
 // Incoming Call
 app.post('/twilio/voice', twilio.voice.create);
+// WARNING this dialout resource must require authorization
+app.post('/twilio/voice/dialout', twilio.voice.dialout);
 app.post('/twilio/voice/screen', twilio.voice.screen);
 app.post('/twilio/voice/connect', twilio.voice.connect);
 //app.post('/twilio/voice/forward', twilio.voice.forward);
