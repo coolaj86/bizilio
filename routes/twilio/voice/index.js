@@ -116,9 +116,32 @@
   };
 
 
+  function createCallRepTwiMl() {
+    // Tell the Rep to press any key to accept
+    // 7200 == 2 hours
+    var response
+      ;
+      
+    response = ""
+      + '<Response>'
+      + '<Dial timeLimit="7200" callerId="' + config.number + '" record="true" action="/twilio/voice?tried=true">'
+      + '<Number url="/twilio/voice/screen">'
+      + config.forwardTo
+      + '</Number>'
+      + '</Dial>'
+      + '</Response>'
+      ;
+
+    console.log('DEBUG response:', response);
+
+    return response;
+  }
+
   // POST /twilio/voice?tried=true
+  // ?caller=somenumber
   voice.create = function (req, res) {
     var response = '<?xml version="1.0" encoding="UTF-8"?>\n'
+      , caller
       ;
 
     if (req.query.tried && 'completed' !== req.body.DialCallStatus) {
@@ -131,22 +154,14 @@
         ;
     } else if (!req.body || 'completed' !== req.body.DialCallStatus) {
       console.log('call is not complete');
-      // Tell the Rep to press any key to accept
-      // 7200 == 2 hours
-      response += ""
-        + '<Response>'
-        + '<Dial timeLimit="7200" callerId="' + config.number + '" record="true" action="/twilio/voice?tried=true">'
-        + '<Number url="/twilio/voice/screen">'
-        + config.forwardTo
-        + '</Number>'
-        + '</Dial>'
-        + '</Response>'
-        ;
-      console.log('DEBUG response:', response);
+      response += createCallRepTwiMl();
     } else {
       console.log('completed');
       // Send recorded conversanion
-      forwardRecordedCallViaEmail(req.body.Caller, req.body.RecordingUrl, JSON.stringify(req.body, null, '  '));
+      if (req.query) {
+        caller = req.query.caller || req.body.Caller;
+      }
+      forwardRecordedCallViaEmail(caller, req.body.RecordingUrl, JSON.stringify(req.body, null, '  '));
       response += ""
         + '<Response><Hangup/></Response>'
         ;
@@ -220,7 +235,12 @@
       ;
 
     if (req.query.dial) {
-      dial = '<Dial record="true" callerId="' + config.number + '" action="/twilio/voice">' + req.query.dial + '</Dial>';
+      dial = '<Dial record="true" callerId="'
+        + config.number 
+        + '" action="/twilio/voice?caller=' + encodeURIComponent(req.query.dial)
+        + '">'
+        + req.query.dial + '</Dial>'
+        ;
     }
     // Tell the rep that they're being connected
     response = ""
