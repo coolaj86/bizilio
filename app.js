@@ -48,6 +48,10 @@ email.init({
   config: require('./config.email.json')
 , inquire: mailer.inquire
 });
+
+if ('80' !== port.toString() && '443' !== port.toString()) {
+  // host += ':' + port
+}
 twilio.init({
   config: require('./config.twilio.json')
 , mail: mailer.mail

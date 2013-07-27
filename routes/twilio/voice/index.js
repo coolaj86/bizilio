@@ -8,7 +8,6 @@
     , Twilio = require('twilio')
     , twilio
     , realsendemail
-    , host = 'chunkhost.coolaj86.com:3000'
     /*
     , nums = [
         "801-360-4427" // me
@@ -167,19 +166,19 @@
       , twilio = new Twilio.RestClient(config.id, config.auth)
       ;
 
-    // host = req.headers['host']
+    //host = req.headers.host;
     twilio.calls.post(
       { to: caller
       , from: config.number
       // this is already recorded on the outbound side
       //, record: true
-      , url: 'http://' + host + '/twilio/voice/screen?dial=' + encodeURIComponent(callee)
+      , url: 'http://' + config.host + '/twilio/voice/screen?dial=' + encodeURIComponent(callee)
       }
     , function (err, result) {
         // Something fishy about this result...
         // methinks it's not a plain js obj,
         // but a mutant that doesn't .toJSON() easily
-        console.log('dialout', result);
+        console.log('dialout', result.status, result.message, result.code);
         res.send({ "success": true });
       }
     );
@@ -194,7 +193,7 @@
       ;
 
     if (req.query.dial) {
-      search = '?dial=' + encodeURIComponent(req.params.dial);
+      search = '?dial=' + encodeURIComponent(req.query.dial);
     }
 
     // Tell the Rep to press any key to accept
@@ -220,8 +219,8 @@
       , dial = ''
       ;
 
-    if (req.params.dial) {
-      dial = '<Dial record="true" callerId="' + config.number + '" action="/twilio/voice">' + req.params.dial + '</Dial>';
+    if (req.query.dial) {
+      dial = '<Dial record="true" callerId="' + config.number + '" action="/twilio/voice">' + req.query.dial + '</Dial>';
     }
     // Tell the rep that they're being connected
     response = ""
