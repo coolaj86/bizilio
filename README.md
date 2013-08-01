@@ -3,12 +3,13 @@ Bizilio
 
 All the Twilio snippets you could ever want for a small business (well, getting there).
 
-This is under development right now.
-Next time I commit I'll remove this message and the API will probably work as documented.
-As of right this minute, some things are different.
+Note that there are still a few differences between the documentation and the implementation,
+but they're coming together.
 
 Benefits of Bizilio
 ===
+
+See <https://github.com/coolaj86/bizilio>
 
 Right now this is mostly just a call, voicemail, and text forwarding service.
 
@@ -132,7 +133,10 @@ The rep records the call, and the conference exits when the rep hangs up.
 
 # STATEful API
 
-A lot of the interaction that goes on between Twilio and the server is very stateful
+A lot of the interaction that goes on between Twilio and the server is very stateful.
+
+You really don't need to know about any of it to use bizilio,
+but the resultant snippets are pretty useful.
 
 A note about the `statefulMount`:
 Since none of these resources are useful to the user's broswser and
