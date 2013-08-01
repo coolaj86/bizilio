@@ -57,10 +57,16 @@ if ('80' !== port.toString() && '443' !== port.toString()) {
 twilio.init({
   config: require('./config.twilio.json')
 , mail: mailer.mail
-/*TODO , mount: '/twilio'*/
+  // TODO provide a randomizer script to generate obscure url
+  // or even randomize on startup?
+  // Does the end-dev even need to know about the stateful API?
+//, statefulMount: '/my-secret-twilio'
+//, restfulMount: '/twilio'
 });
 
-
+/*
+ * The STATEful and RESTful APIs are mixed here, but they probably shouldn't be
+ */
 // Incoming SMS
 app.post('/twilio/sms/forward', twilio.sms.forward);
 
@@ -79,6 +85,8 @@ app.post('/twilio/voicemail/forward', twilio.voicemail.forward);
 // Conference (there's just one right now)
 app.post('/twilio/conference', twilio.conference.create);
 app.post('/twilio/conference/join', twilio.conference.join);
+app.post('/twilio/conference/leave', twilio.conference.leave);
+app.post('/twilio/conference/end', twilio.conference.end);
 
 // Email
 app.post('/email', email.create);

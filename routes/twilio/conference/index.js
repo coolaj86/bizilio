@@ -20,7 +20,8 @@
       , msg
       ;
 
-    subject = "Recorded Conference with " + caller ;
+    // TODO get list of callers
+    subject = "Recorded Conference on " + (new Date().toLocaleString()) ;
     msg = ""
       + "\n" + caller + "\n\n"
       + mp3
@@ -128,7 +129,7 @@
       console.log(data);
     });
     */
-    forwardRecordedConferenceViaEmail(caller, req.body.RecordingUrl, JSON.stringify(req.body, null, '  '));
+    forwardRecordedConferenceViaEmail(req.call.conf.name, req.body.RecordingUrl, JSON.stringify(req.body, null, '  '));
     res.setHeader('Content-Type', 'application/xml');
     res.end(resp.toString());
   };
