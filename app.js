@@ -26,6 +26,8 @@ app.use(express.json());
 app.use(express.urlencoded());
 app.use(express.methodOverride());
 app.use(express.compress());
+
+app.use('/twilio', twilio.session());
 app.use(app.router);
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -73,6 +75,10 @@ app.post('/twilio/voice/connect', twilio.voice.connect);
 // Voicemail
 app.post('/twilio/voicemail', twilio.voicemail.create);
 app.post('/twilio/voicemail/forward', twilio.voicemail.forward);
+
+// Conference (there's just one right now)
+app.post('/twilio/conference', twilio.conference.create);
+app.post('/twilio/conference/join', twilio.conference.join);
 
 // Email
 app.post('/email', email.create);
